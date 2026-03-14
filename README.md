@@ -289,7 +289,6 @@ Folds 7–8 validate on 2025 data never seen during optimization — positive EV
 - Win Rate: **29.1%** | Geometric BEP (5× leverage, 0.075% round-trip): ~25.4%
 - ROI (Jan–Mar 2026): **+0.10%** (3.7 pp above breakeven on 87 trades)
 
-[이미지 삽입 예정: Walk-forward 누적 EV 곡선 — 10 folds]
 
 ### 5.2 Behavioral Alpha Engine — Out-of-Sample Results
 
@@ -305,13 +304,6 @@ Strategy: Funding-rate squeeze + EMA-200 long-only filter | 5× leverage
 
 The 2023 data was entirely withheld from parameter selection — it constitutes a clean out-of-sample test demonstrating structural alpha.
 
-[이미지 삽입 예정: 누적 수익률 곡선 — Behavioral Alpha 2023–2026]
-
-[이미지 삽입 예정: 월별 수익률 히트맵 및 Drawdown 분포]
-
-[이미지 삽입 예정: Bloomberg-style TUI 대시보드 스크린샷]
-
-[이미지 삽입 예정: 28-dim V4 피처 상관관계 히트맵]
 
 ### 5.3 Physics & Mathematics Quality Score
 
