@@ -1,0 +1,9 @@
+model:
+  name: laguerre_rsi
+  params:
+    gamma: 0.5
+    oversold: 0.2
+    overbought: 0.8
+    max_weight: 0.35
+universe:
+  - BTCUSDT

@@ -1,0 +1,161 @@
+app:
+  mode: paper           # paper | por | live
+  refresh_seconds: 2
+  symbol: BTCUSDT
+  timeframe: 15m
+  initial_equity: 10000.0
+
+bybit:
+  env: mainnet           # testnet | mainnet (default: mainnet)
+  category: linear       # linear | spot
+
+watchlist:
+  - BTCUSDT
+  - ETHUSDT
+  - SOLUSDT
+  - BNBUSDT
+
+risk:
+  max_position_pct: 0.50
+  max_daily_loss_pct: 0.05
+  leverage_cap: 10
+  default_sl_pct: 0.03
+  default_tp_pct: 0.04
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.08
+  lev_set: "10"
+  lev_min_floor: 10
+  lev_lookback_trades: 100
+  lev_min_trades: 30
+  lev_max_loss: 0.05
+  lev_fee_buffer: 0.001
+  lev_vol_cap: 0.10
+  enable_dynamic_leverage: false
+  enable_live_orders: true
+  debug_leverage: false
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+  tax_usdt: 0.005
+
+strategy:
+  name: trend_follow
+  params:
+    fast_ma: 7
+    slow_ma: 28
+    rsi_len: 14
+    rsi_ob: 70
+    rsi_os: 30
+
+news:
+  provider: auto          # auto | openbb | yfinance | mock
+  query: crypto
+  symbol: BTCUSDT
+  refresh_ticks: 30       # refresh every N ticks (~60s at 2s/tick)
+  limit: 20
+
+# Institutional models (see configs/models/ for per-model configs)
+model:
+  name: tsmom                    # tsmom | vol_target | pairs | macro_regime | factors
+  config_path: configs/models/tsmom.yaml  # path to model-specific config
+
+swing:
+  enabled: true
+  htf_timeframes: [1h, 4h]
+  entry_threshold: 0.50
+  sl_atr_mult: 1.5
+  tp_atr_mult: 6.0
+  min_rr_ratio: 3.0
+  trailing_stop_atr_mult: 2.0
+  trailing_activation_rr: 1.5
+  partial_exit_pct: 0.50
+  partial_exit_rr: 2.0
+  max_candles_in_trade: 96
+  cooldown_sec: 300
+  max_trades_per_day: 5
+  max_consecutive_losses: 3
+  consecutive_loss_pause_sec: 3600
+  regime:
+    vol_lookback: 100
+    vol_low_pctile: 20
+    vol_high_pctile: 90
+    trend_ema_fast: 21
+    trend_ema_slow: 55
+
+indicators:
+  ma_lengths: [7, 25, 28, 99]
+  ema_lengths: [9, 21, 50, 200]   # 50/200 added for EMA trend-fight penalty (Phase 3 Rule A)
+  boll_length: 20
+  boll_std: 2.0
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  rsi_length: 14
+  wr_length: 14
+  stoch_rsi_length: 14
+  kdj_length: 9
+  sar_af: 0.02
+  sar_max_af: 0.2
+
+# 1m/10x rectification modules
+# alpha/beta encodes required TP/SL ratio in training labels.
+# alpha=2.0, beta=1.0 → 2:1 RR; min_rr_ratio guard enforced in code.
+triple_barrier:
+  alpha: 2.0         # TP = 2.0× ATR  (raised from 1.5 to fix reverse-RR)
+  beta: 1.0          # SL = 1.0× ATR  (keep short)
+  h: 15
+  fee_roundtrip: 0.0011
+  min_rr_ratio: 1.5  # Code-level guard: auto-raise alpha if ratio violated
+
+walk_forward:
+  n_folds: 5
+  min_train_bars: 5000
+  gae_lambda: 0.95
+  lam_drawdown: 0.5
+  lam_cost: 1.0
+
+actor:
+  use_mlp: true
+  hidden_dim: 128
+
+calibration:
+  method: temperature
+  T_init: 1.5
+  threshold: 0.55
+
+eval:
+  timeframes: [1m, 3m, 5m, 15m, 30m, 1h]
+  p_min: 0.55
+  k_atr: 1.5
+  k_pct: 0.001
+  min_stop_abs: 0.0
+  rr: 1.5
+  escape_loss_mult: 1.0
+  escape_adv_mult: 0.8
+  kelly_scale: 0.5
+  max_loss_pct: 0.01
+  fee_rate: 0.00055
+  slip_bps: 0.0001
+  sigmoid_temp: 1.0
+  metrics_window: 500
+  stale_max_sec: 90
+  cooldown_sec: 60
+  max_trades_per_hour: 30
+  warmup_bars: 120
+  gates:
+    p_open_thresholds:
+      1m: 0.60
+      3m: 0.62
+      5m: 0.63
+      15m: 0.65
+      30m: 0.66
+      1h: 0.68
+    delta_thresholds:
+      1m: 0.03
+      3m: 0.04
+      5m: 0.05
+      15m: 0.06
+      30m: 0.07
+      1h: 0.08
+  decision_mode: greedy

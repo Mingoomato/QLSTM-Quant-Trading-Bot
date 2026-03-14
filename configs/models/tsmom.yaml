@@ -1,0 +1,34 @@
+model:
+  name: tsmom
+  universe:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+  params:
+    lookbacks: [63, 126, 252]
+    signal_method: cumret         # cumret | macross
+    ma_fast: 21
+    ma_slow: 63
+    vol_scale: true
+    vol_lookback: 63
+    max_weight: 0.4
+  rebalance: weekly               # daily | weekly | monthly | biweekly
+
+app:
+  mode: paper
+  initial_equity: 100000.0
+  timeframe: 1d
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+
+risk:
+  max_position_pct: 0.4
+  max_daily_loss_pct: 0.05
+  leverage_cap: 3
+  default_sl_pct: 0.05
+  default_tp_pct: 0.10
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.10

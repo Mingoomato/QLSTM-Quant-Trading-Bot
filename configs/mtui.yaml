@@ -1,0 +1,41 @@
+# Multi-Model TUI Configuration
+# Run with: python scripts/run_mtui.py --config configs/mtui.yaml
+
+app:
+  mode: paper           # paper | por | live | replay
+  timeframe: 1d
+  refresh_seconds: 5
+  lookback_days: 90
+  initial_equity: 100000.0
+  warmup_bars: 30
+  score_lambda: 2.0       # drawdown penalty for composite score
+  score_mu: 1.0            # fee penalty for composite score
+  db_dir: data/mtui
+
+runs:
+  # Existing institutional models
+  - name: tsmom
+    config_path: configs/models/tsmom.yaml
+
+  - name: tsmom+voltgt
+    config_path: configs/models/tsmom.yaml
+    vol_target: 0.10
+
+  - name: pairs
+    config_path: configs/models/pairs.yaml
+
+  - name: macro_regime
+    config_path: configs/models/macro_regime.yaml
+
+  - name: factors
+    config_path: configs/models/factors.yaml
+
+  # New advanced models
+  - name: hrp
+    config_path: configs/models/hrp.yaml
+
+  - name: bocpd
+    config_path: configs/models/bocpd.yaml
+
+  - name: online_eg
+    config_path: configs/models/online_portfolio.yaml

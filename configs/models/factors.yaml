@@ -1,0 +1,36 @@
+model:
+  name: factors
+  universe:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+  params:
+    btc_symbol: BTCUSDT
+    rolling_window: 63
+    momentum_lookback: 21
+    vol_lookback: 21
+    max_correlation: 0.85
+    max_factor_contribution: 0.6
+    corr_spike_threshold: 0.9
+    derisk_on_spike: true
+    derisk_scale: 0.5
+  rebalance: weekly
+
+app:
+  mode: paper
+  initial_equity: 100000.0
+  timeframe: 1d
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+
+risk:
+  max_position_pct: 0.4
+  max_daily_loss_pct: 0.05
+  leverage_cap: 3
+  default_sl_pct: 0.05
+  default_tp_pct: 0.10
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.10

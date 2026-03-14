@@ -1,0 +1,7 @@
+model:
+  name: schrodinger_indicator
+  params:
+    lookback: 60
+    max_weight: 0.35
+universe:
+  - BTCUSDT

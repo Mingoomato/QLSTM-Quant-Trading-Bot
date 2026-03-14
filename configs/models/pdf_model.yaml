@@ -1,0 +1,7 @@
+model:
+  name: pdf_model
+  params:
+    lookback: 120
+    max_weight: 0.4
+universe:
+  - BTCUSDT

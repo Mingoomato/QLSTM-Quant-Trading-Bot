@@ -1,0 +1,31 @@
+model:
+  name: online_portfolio
+  universe:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+  params:
+    eta: 0.05
+    max_weight: 0.5
+    min_weight: 0.02
+    turnover_penalty: 0.001
+  rebalance: daily
+
+app:
+  mode: paper
+  initial_equity: 100000.0
+  timeframe: 1d
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+
+risk:
+  max_position_pct: 0.5
+  max_daily_loss_pct: 0.05
+  leverage_cap: 1
+  default_sl_pct: 0.05
+  default_tp_pct: 0.10
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.10

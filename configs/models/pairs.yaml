@@ -1,0 +1,48 @@
+model:
+  name: pairs
+  universe:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+  params:
+    pairs:
+      - long: BTCUSDT
+        short: ETHUSDT
+        entry_z: 2.0
+        exit_z: 0.5
+        stop_z: 4.0
+        lookback: 63
+        half_life: 21
+        spread_method: log_ratio    # log_ratio | ols_residual
+        weight: 1.0
+      - long: SOLUSDT
+        short: BNBUSDT
+        entry_z: 2.0
+        exit_z: 0.5
+        stop_z: 4.0
+        lookback: 63
+        spread_method: log_ratio
+        weight: 0.5
+    dollar_neutral: true
+    max_pair_weight: 0.3
+    time_stop_bars: 126
+  rebalance: daily
+
+app:
+  mode: paper
+  initial_equity: 100000.0
+  timeframe: 1d
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+
+risk:
+  max_position_pct: 0.3
+  max_daily_loss_pct: 0.03
+  leverage_cap: 2
+  default_sl_pct: 0.04
+  default_tp_pct: 0.06
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.08

@@ -1,0 +1,44 @@
+model:
+  name: bocpd
+  universe:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+  params:
+    btc_symbol: BTCUSDT
+    hazard_lambda: 200.0
+    cp_threshold: 0.3
+    risk_on_weight: 0.4
+    risk_off_weight: 0.05
+    lookback: 63
+    allocations:
+      risk_on:
+        BTCUSDT: 0.40
+        ETHUSDT: 0.30
+        SOLUSDT: 0.15
+        BNBUSDT: 0.15
+      risk_off:
+        BTCUSDT: 0.05
+        ETHUSDT: 0.03
+        SOLUSDT: 0.01
+        BNBUSDT: 0.01
+  rebalance: daily
+
+app:
+  mode: paper
+  initial_equity: 100000.0
+  timeframe: 1d
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+
+risk:
+  max_position_pct: 0.5
+  max_daily_loss_pct: 0.05
+  leverage_cap: 1
+  default_sl_pct: 0.05
+  default_tp_pct: 0.10
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.10

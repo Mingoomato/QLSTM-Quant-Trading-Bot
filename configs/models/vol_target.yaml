@@ -1,0 +1,34 @@
+model:
+  name: vol_target
+  universe:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+  params:
+    target_vol: 0.10              # 10% annualized target
+    vol_method: ewma              # ewma | rolling
+    vol_lookback: 63
+    ewma_halflife: 21
+    max_leverage: 3.0
+    min_leverage: 0.1
+    annualize_factor: 252.0
+    floor_vol: 0.01
+  rebalance: weekly
+
+app:
+  mode: paper
+  initial_equity: 100000.0
+  timeframe: 1d
+
+execution:
+  fee_bps: 6
+  slippage_bps: 2
+
+risk:
+  max_position_pct: 0.5
+  max_daily_loss_pct: 0.05
+  leverage_cap: 3
+  default_sl_pct: 0.05
+  default_tp_pct: 0.10
+  kill_switch: false
+  circuit_breaker_loss_pct: 0.10

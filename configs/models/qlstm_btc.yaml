@@ -1,0 +1,20 @@
+# configs/models/qlstm_btc.yaml
+
+app:
+  timeframe: "15m"
+  project_name: "Bybit_QLSTM_Backtest"
+
+model:
+  name: "qlstm"
+  universe: ["BTCUSDT"]
+  feature_columns: 27 
+
+broker:
+  initial_capital: 20
+  leverage: 5
+  fee_rate: 0.0005 
+  slippage: 0.0001
+
+strategy:
+  confidence_threshold: 0.9
+  entropy_cap: 0.2

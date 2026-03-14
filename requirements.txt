@@ -1,0 +1,63 @@
+# ════════════════════════════════════════════════════════════════════════════
+# Quantum Quant Trading — Python Requirements
+# Target: Python 3.10 / 3.11  |  CUDA 12.x  |  Google Colab A100
+# ════════════════════════════════════════════════════════════════════════════
+#
+# ── Quick Setup (Colab A100) ─────────────────────────────────────────────
+#
+#   # 1. PyTorch with CUDA 12.1 (Colab A100 pre-installed version usually matches)
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+#
+#   # 2. Core + Quantum dependencies
+#   pip install -r requirements.txt
+#
+#   # 3. (Optional) GPU-accelerated PennyLane backend — enables lightning.gpu
+#   pip install pennylane-lightning[gpu]
+#
+# ─────────────────────────────────────────────────────────────────────────
+
+
+# ── PyTorch ───────────────────────────────────────────────────────────────
+# Install via index-url for CUDA build (see quick setup above).
+# Pinned to 2.4.x: stable AMP, vmap, and lightning.gpu compatibility.
+torch>=2.4.0,<2.6.0
+torchvision>=0.19.0
+
+
+# ── PennyLane (Quantum ML) ────────────────────────────────────────────────
+# pennylane        : core framework + @qml.batch_params (≥0.40 required)
+# pennylane-lightning: C++ CPU backend (lightning.qubit) — always install
+# pennylane-lightning[gpu]: CUDA backend (lightning.gpu) — install separately
+#   (requires cuQuantum / cuStateVec; see quick setup step 3)
+pennylane>=0.44.0,<0.47.0
+pennylane-lightning>=0.44.0,<0.47.0
+
+
+# ── Scientific Computing ──────────────────────────────────────────────────
+numpy>=1.24.0,<2.0.0          # <2.0 keeps pandas/pennylane compatibility
+pandas>=2.0.0,<3.0.0
+
+
+# ── Data & Progress ───────────────────────────────────────────────────────
+tqdm>=4.66.0
+
+
+# ── Configuration & Environment ───────────────────────────────────────────
+python-dotenv>=1.0.0           # dotenv.load_dotenv
+PyYAML>=6.0                    # yaml.safe_load  (src/utils/config.py)
+
+
+# ── Storage ───────────────────────────────────────────────────────────────
+SQLAlchemy>=2.0.0,<3.0.0       # src/storage/database.py
+
+
+# ── Visualization (backtest charts) ──────────────────────────────────────
+matplotlib>=3.8.0
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Version Compatibility Matrix (tested)
+# ────────────────────────────────────────────────────────────────────────────
+#  torch 2.4.1+cu121  |  pennylane 0.44  |  numpy 1.26.4  |  pandas 2.2.x
+#  Python 3.10 / 3.11  |  CUDA 12.1-12.4  |  A100 / RTX 3090 / CPU
+# ════════════════════════════════════════════════════════════════════════════
