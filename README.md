@@ -425,8 +425,57 @@ python -m venv .venv
 
 pip install -r requirements.txt
 ```
-
 ### 7.2 Environment Variables
+
+Set your API keys in a `.env` file. **Never commit `.env` to Git** — it is already listed in `.gitignore`.
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in the following values:
+
+```dotenv
+# ── Bybit API credentials ─────────────────────────────────────────
+BYBIT_API_KEY=your_bybit_api_key_here
+BYBIT_API_SECRET=your_bybit_api_secret_here
+
+# ── Google Gemini API key (TUI AI panel — optional) ───────────────
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+#### How to obtain a Bybit API key
+
+1. Log in to [bybit.com](https://www.bybit.com) → top-right profile → **API Management**
+2. Click **Create New Key**
+3. Key type: `System-generated API Keys`
+4. Set permissions:
+   - ✅ **Read** (market data)
+   - ✅ **Unified Trading — Trade** (order execution; required for live mode only)
+5. Optionally restrict to your IP address for added security.
+6. Paste the generated `API Key` and `API Secret` into `.env`.
+
+> **Paper trading mode** (`--mode paper`, the default) does not send any real orders — the API key is not required.
+> **Live mode** (`--mode live`) requires valid credentials and sufficient margin balance.
+
+#### How to obtain a Gemini API key (optional)
+
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey) (free tier available)
+2. Click **Create API Key** → select a project → copy the key
+3. Paste it into `GEMINI_API_KEY` in your `.env`
+4. If omitted, the TUI AI assistant panel is disabled; all other features remain functional.
+
+#### Security checklist
+
+| Item | Action |
+|---|---|
+| `.env` excluded from Git | Already in `.gitignore` — verify with `git status` |
+| Minimum API permissions | Grant Read + Trade only; never enable Withdrawal |
+| IP whitelist | Restrict API key to your IP address on Bybit |
+| If a key is leaked | Delete it immediately in Bybit API Management and reissue |
+
+
+### 7.3 Environment Variables
 
 ```bash
 cp .env.example .env
@@ -434,7 +483,7 @@ cp .env.example .env
 # Paper trading mode is the default — no live orders are placed without --mode live
 ```
 
-### 7.3 Training
+### 7.4 Training
 
 ```bash
 # Step 1: Behavior Cloning pre-training (2019–2022, regime-invariant physics)
@@ -452,7 +501,7 @@ python scripts/train_quantum_v2.py \
   --tp-mult 3.0 --sl-mult 1.0
 ```
 
-### 7.4 Backtesting
+### 7.5 Backtesting
 
 ```bash
 # Quantum agent OOS backtest
@@ -468,7 +517,7 @@ python scripts/backtest_behavioral.py \
   --signals fr --long-only --trend-ema 200 --fr-z-thr 2.5
 ```
 
-### 7.5 Live Paper Trading TUI
+### 7.6 Live Paper Trading TUI
 
 ```bash
 python scripts/run_quantum_tui.py --mode paper \
