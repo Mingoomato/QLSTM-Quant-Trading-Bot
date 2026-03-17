@@ -534,29 +534,78 @@ python scripts/run_quantum_tui.py --mode paper \
 
 ```
 quantum-quant-trading/
+│
 ├── src/
-│   ├── models/
-│   │   ├── quantum_layers.py       # VQC circuits (IsingZZ ansatz, PennyLane)
-│   │   ├── integrated_agent.py     # QuantumFinancialAgent (full actor-critic)
-│   │   ├── advanced_physics.py     # Lindblad, MPS, MINE, Platt, Wasserstein DRO
-│   │   ├── loss.py                 # AdvancedPathIntegralLoss, GAE, CriticHead
-│   │   ├── features_v4.py          # 28-dim feature pipeline
-│   │   ├── features_v5.py          # 54-dim (V4 + Frenet geometric features)
-│   │   └── frenet_features.py      # Frenet–Serret curvature/torsion extractor
-│   ├── data/
-│   │   └── spectral_decomposer.py  # RMT Marchenko–Pastur + 3-Binary LDA
-│   ├── risk/
-│   │   └── manager.py              # Kill switch, circuit breaker, position limits
-│   └── app/
-│       └── quantum_ai_model_tui.py # Textual Bloomberg-style TUI
+│   ├── models/                         # Core model components
+│   │   ├── integrated_agent.py         # QuantumFinancialAgent — full actor-critic agent
+│   │   ├── quantum_layers.py           # VQC circuits (IsingZZ ansatz, PennyLane)
+│   │   ├── loss.py                     # AdvancedPathIntegralLoss, GAE, CriticHead, IQN
+│   │   ├── advanced_physics.py         # Lindblad, MPS, MINE, Platt, Wasserstein DRO, Hurst
+│   │   ├── features_v4.py              # 28-dim feature pipeline (current standard)
+│   │   ├── features_v5.py              # 54-dim (V4 + Frenet geometric features)
+│   │   ├── features_v3.py              # 30-dim (V2 + Hurst, autocorr, purity proxy)
+│   │   ├── features_v2.py              # 27-dim baseline feature set
+│   │   ├── frenet_features.py          # Frenet–Serret curvature/torsion extractor
+│   │   ├── qng_optimizer.py            # Quantum Natural Gradient (QFI-based)
+│   │   ├── ensemble_agent.py           # Ensemble wrapper over multiple agents
+│   │   ├── labeling.py                 # Triple-barrier labeling for BC targets
+│   │   ├── oi_profile.py               # Open interest profile features
+│   │   └── base.py                     # Abstract base classes
+│   │
+│   ├── data/                           # Data ingestion & preprocessing
+│   │   ├── spectral_decomposer.py      # RMT Marchenko–Pastur denoising + 3-Binary LDA
+│   │   ├── bybit_mainnet.py            # Bybit V5 REST client (OHLCV, FR, OI)
+│   │   ├── binance_client.py           # Binance REST client (auxiliary data)
+│   │   └── data_client.py              # Unified data client interface
+│   │
+│   ├── strategies/                     # Signal filters & regime detection
+│   │   ├── regime_gate.py              # Vol percentile + HTF EMA regime gate, Cramér-Rao filter
+│   │   └── hmm_regime.py               # Hidden Markov Model regime classifier
+│   │
+│   ├── indicators/                     # Technical indicator pipeline
+│   │   └── pipeline.py                 # ATR, RSI, MACD, OBI, Bollinger, momentum
+│   │
+│   ├── storage/                        # Persistence layer
+│   │   └── database.py                 # SQLite audit trail (all trades & signals)
+│   │
+│   ├── app/                            # TUI entry point
+│   │   ├── tui.py                      # Textual Bloomberg-style dashboard
+│   │   └── cli_args.py                 # CLI argument definitions
+│   │
+│   ├── utils/                          # Shared utilities
+│   │   ├── config.py                   # YAML config loader
+│   │   ├── logging.py                  # Structured logger setup
+│   │   ├── decision.py                 # Trade decision helpers
+│   │   └── private_trade_logger.py     # Local trade log
+│   │
+│   └── viz/                            # Visualization
+│       └── training_viz.py             # Walk-forward EV / equity curve plots
+│
 ├── scripts/
-│   ├── pretrain_bc.py              # Behavior Cloning pre-training
-│   ├── train_quantum_v2.py         # RL walk-forward training
-│   ├── backtest_model_v2.py        # Quantum agent OOS backtest
-│   └── backtest_behavioral.py      # Behavioral alpha backtest
+│   ├── pretrain_bc.py                  # Behavior Cloning pre-training (2019–2022)
+│   ├── train_quantum_v2.py             # RL walk-forward training (2023–2025, 10 folds)
+│   ├── backtest_model_v2.py            # Quantum agent OOS backtest
+│   ├── backtest_behavioral.py          # Behavioral alpha backtest (FR squeeze)
+│   ├── run_quantum_tui.py              # Launch Bloomberg-style TUI
+│   ├── run_behavioral_trade.py         # Run behavioral alpha strategy (live/paper)
+│   ├── optimize_backtest.py            # Optuna hyperparameter search on backtest
+│   ├── optuna_bc_search.py             # Optuna BC pre-training search
+│   ├── train_bc_ensemble.py            # Ensemble BC training
+│   ├── find_best_seed.py               # Seed stability search
+│   ├── visualize_walk_forward.py       # Plot fold-by-fold EV results
+│   └── visualize_atr_dist.py           # ATR distribution diagnostic
+│
 ├── configs/
-│   └── default.yaml
-├── requirements.txt
+│   ├── default.yaml                    # Main config (risk, model, swing params)
+│   └── models/                         # Per-model YAML configs
+│       ├── qlstm_btc.yaml
+│       ├── quantum_harmonic_oscillator.yaml
+│       ├── schrodinger_indicator.yaml
+│       └── ...
+│
+├── requirements.txt                    # Python dependencies
+├── .env.example                        # Environment variable template
+├── .gitignore
 └── README.md
 ```
 
