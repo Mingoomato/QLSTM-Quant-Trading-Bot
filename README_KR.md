@@ -504,7 +504,3 @@ pytest -q  # test_agent_short_signal.py 포함 (input-invariance regression)
 └── configs/
     └── default.yaml
 ```
-
----
-
-> **참고:** `Testnet_API.md`와 `.env`는 이 repo에서 제외됩니다. 모든 API key는 환경변수에서만 로드됩니다. Paper trading이 기본값이며, live trading은 `--mode live` flag를 명시해야 합니다.
