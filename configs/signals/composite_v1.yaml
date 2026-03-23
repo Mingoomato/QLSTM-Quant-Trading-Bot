@@ -1,0 +1,204 @@
+# composite_v1.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Composite Signal: OI_PRICE_DIV × LIQ_LONG_Z
+#
+# Hypothesis:
+#   "Squeeze Exhaustion Setup"
+#   When OI diverges bearishly (OI building while price is declining → smart
+#   money accumulation / short squeeze fuel) AND long liquidations spike
+#   (paper hands capitulating), the probability of a LONG reversal is elevated.
+#
+#   Formally:
+#     LONG  signal = (oi_price_div < -oi_div_thr) AND (liq_long_z > liq_thr)
+#       → OI accumulating into a down-move + liq waterfall = classic squeeze setup
+#     SHORT signal = (oi_price_div >  oi_div_thr) AND (liq_short_z > liq_thr)
+#       → OI distributing into an up-move + short squeeze exhausts buying = reversal top
+#
+#   Interaction boost (synergy multiplier):
+#     When BOTH legs fire simultaneously, composite_score *= synergy_mult
+#     rather than summing independently. This captures the "AND" non-linearity
+#     that makes co-occurrence more predictive than the sum of parts.
+#
+#   Edge theory (Lopez de Prado, 2018):
+#     Independent signals → linear alpha.
+#     Correlated structural signals → superlinear alpha when they co-occur
+#     because they measure the same latent mechanism (forced liquidation →
+#     order imbalance → mean-reversion).
+#
+# Usage with backtest_structural.py (current CLI — no composite-yaml flag yet):
+#   # Baseline: AND-gate approximated via min-score gate on oi+liq combined
+#   python scripts/backtest_structural.py \
+#     --signals oi,liq \
+#     --oi-div-thr 0.30 \
+#     --liq-thr 2.0 \
+#     --min-score 1.2 \
+#     --start-date 2023-01-01
+#
+#   # OOS validation gate (Lopez de Prado §13):
+#   python scripts/backtest_structural.py \
+#     --signals oi,liq \
+#     --oi-div-thr 0.30 \
+#     --liq-thr 2.0 \
+#     --min-score 1.2 \
+#     --start-date 2025-10-01 \
+#     --end-date 2026-03-23
+#
+# NOTE: --composite-yaml and --ab-grid flags are PROPOSED (not yet in backtest_structural.py).
+#       synergy_mult and veto logic require engine update (see composite.mode below).
+# ─────────────────────────────────────────────────────────────────────────────
+
+meta:
+  name: composite_v1
+  version: "1.0"
+  author: Felipe
+  created: "2026-03-23"
+  hypothesis: >
+    OI_PRICE_DIV and LIQ_LONG_Z measure different faces of the same latent
+    mechanism: forced position unwind. Their co-occurrence is a stronger
+    indicator than either alone (interaction effect). Alpha half-life
+    is expected to be longer than statistical patterns (RSI, MACD) because
+    the mechanism is structural (broker liquidation cascade), not curve-fit.
+  target_alpha_half_life_days: 180   # validate with rolling-window WR decay test
+  prior_baseline: "FR_LONG+EMA200 → ROI +126%, WR 36.8% (2023-2026)"
+
+# ── Instruments & timeframe ──────────────────────────────────────────────────
+instrument:
+  symbol: BTCUSDT
+  timeframe: 1h          # 1h primary (15m proven fragile in OOS 2026 Q1)
+  leverage: 10
+  pos_frac: 0.50         # 50% equity per trade → eff_leverage = 5x
+  fee_maker_pct: 0.0002  # Bybit maker 0.02%
+  fee_taker_pct: 0.00055 # Bybit taker 0.055%
+  fee_round_trip_pct: 0.00075  # 0.075% total
+
+# ── Exit structure ───────────────────────────────────────────────────────────
+exit:
+  tp_atr_mult: 3.0       # TP = 3.0 × ATR(14)
+  sl_atr_mult: 1.0       # SL = 1.0 × ATR(14)
+  rr_ratio: 3.0          # enforced minimum R:R
+  # BEP: fee=0.375% (eff_lev 5x), need WR > 25.4% to be profitable
+  bep_win_rate: 0.254
+
+# ── Regime gate ──────────────────────────────────────────────────────────────
+regime:
+  ema_period: 200        # EMA200 trend filter
+  long_requires_price_below_ema: false   # squeeze can happen in either direction
+  short_requires_price_above_ema: false
+  # Override: set to true to enforce directional EMA gate (reduces trade count)
+  enforce_ema_gate: false
+
+# ── Signal 1: OI_PRICE_DIV ───────────────────────────────────────────────────
+oi_price_div:
+  feature_index: 3       # I_OI_DIV in backtest_structural.py
+  description: >
+    OI-price directional divergence. Positive = OI rising while price
+    is flat/falling (stealth accumulation or short squeeze loading).
+    Negative = OI falling while price is rising (smart money exiting).
+  # LONG fire condition: oi_price_div < -threshold (OI building into decline)
+  long_threshold: -0.30
+  # SHORT fire condition: oi_price_div > +threshold (OI distributing into rise)
+  short_threshold: 0.30
+  # Score contribution when threshold is crossed (before synergy)
+  score_scale: 1.5       # weight: higher than liq (divergence = leading signal)
+  score_cap: 1.8         # max contribution to avoid single-signal domination
+  # Linear interpolation: score = min(|div| - thr) * scale + base_score, cap)
+  base_score: 0.40
+
+# ── Signal 2: LIQ_LONG_Z ─────────────────────────────────────────────────────
+liq_long_z:
+  feature_index: 4       # I_LIQ_LONG in backtest_structural.py
+  description: >
+    Long liquidation z-score. Spikes when leveraged longs are force-closed
+    by the exchange. High values = capitulation event = fuel exhausted for
+    further down-move → reversal probability increases.
+  # LONG fire condition: liq_long_z > threshold (capitulation complete)
+  long_threshold: 2.0
+  # SHORT analog uses liq_short_z (feature_index=5), same threshold
+  liq_short_feature_index: 5
+  short_threshold: 2.0
+  score_scale: 0.60      # weight: lower than OI (confirming, not leading)
+  score_cap: 1.8
+  base_score: 0.40
+
+# ── Composite logic ───────────────────────────────────────────────────────────
+# STATUS: SCORE mode is LIVE in backtest_structural.py via --min-score flag.
+composite:
+  mode: SCORE            # additive scoring — only mode supported by current engine
+
+  # Both signals contribute independently to a running score.
+  # Score breakdown (engine-hardcoded, shown here for documentation):
+  #   oi_price_div  fired:  min((|div| - oi_div_thr) * 1.5 + 0.4, 1.8)  → ~0.4–1.8
+  #   liq_long_z    fired:  min((liq_z  - liq_thr)   * 0.6 + 0.4, 1.8)  → ~0.4–1.8
+  #   typical co-occurrence total: ~0.8 + 0.6 = ~1.4  (above min_score=1.2)
+  #   single signal only:          ~0.6–0.8            (below min_score=1.2 → filtered)
+
+  # Minimum composite score to generate a trade [IMPLEMENTED via --min-score]
+  min_score: 1.20        # enforces effective AND-gate: both signals must contribute
+
+  # ── Run commands ─────────────────────────────────────────────────────────
+  # In-sample (2023-2025):
+  #   python scripts/backtest_structural.py \
+  #     --signals oi,liq --oi-div-thr 0.30 --liq-thr 2.0 --min-score 1.2 \
+  #     --start-date 2023-01-01 --end-date 2025-09-30
+  #
+  # OOS (2025 Q4 – 2026 Q1):
+  #   python scripts/backtest_structural.py \
+  #     --signals oi,liq --oi-div-thr 0.30 --liq-thr 2.0 --min-score 1.2 \
+  #     --start-date 2025-10-01 --end-date 2026-03-23
+
+# ── Future / Proposed (NOT yet in engine) ────────────────────────────────────
+# Do NOT pass these to backtest_structural.py — they will be silently ignored.
+composite_future:
+  # synergy_mult: 1.35   # non-linear co-occurrence boost; requires engine update
+  # mode_and: true       # strict co-occurrence gate; requires engine update
+  # veto:
+  #   vol_spike_atr_mult: 2.0   # suppress entry during ATR spike > 2x median
+  #   fr_same_dir_z: 3.0        # suppress if FR momentum overwhelms structural signal
+
+# ── A/B test parameters ───────────────────────────────────────────────────────
+# These parameter ranges define the grid for sensitivity analysis.
+# Run manually with each combo (--ab-grid flag is PROPOSED, not yet implemented):
+#   for oi_thr in 0.20 0.25 0.30 0.35 0.40; do
+#     for liq_thr in 1.5 2.0 2.5 3.0; do
+#       python scripts/backtest_structural.py --signals oi,liq \
+#         --oi-div-thr $oi_thr --liq-thr $liq_thr --min-score 1.2 \
+#         --start-date 2023-01-01
+#     done; done
+ab_test_grid:
+  oi_div_threshold: [0.20, 0.25, 0.30, 0.35, 0.40]
+  liq_z_threshold:  [1.5, 2.0, 2.5, 3.0]
+  synergy_mult:     [1.0, 1.20, 1.35, 1.50]
+  min_score:        [0.80, 1.00, 1.20, 1.50]
+  # Report: WR, ROI, MDD, Sharpe for each combination
+  # Selection criterion: max(Sharpe) subject to MDD < 25% and n_trades > 50
+
+# ── Validation protocol (Lopez de Prado 2018, §13) ───────────────────────────
+validation:
+  in_sample:
+    start: "2023-01-01"
+    end:   "2025-09-30"
+  out_of_sample:
+    start: "2025-10-01"
+    end:   "2026-03-23"
+  walk_forward:
+    train_months: 12
+    test_months: 3
+    step_months: 3
+  # Alpha decay test: fit exponential to rolling-window WR over time
+  # WR(t) = WR_0 * exp(-t / half_life)
+  # Target: half_life > 180 days (structural, not curve-fit)
+  alpha_half_life_test:
+    window_size_candles: 200
+    min_half_life_days: 90    # fail threshold
+    target_half_life_days: 180  # pass threshold
+
+# ── Expected outputs ──────────────────────────────────────────────────────────
+expected_outputs:
+  # Based on FR_LONG baseline + structural signal theory
+  # Adjust after first backtest run
+  wr_min: 0.30           # minimum acceptable win rate (above BEP 25.4%)
+  wr_target: 0.38        # target (aligned with FR_LONG+EMA200 baseline)
+  roi_target_annual: 0.80  # 80% annualized (conservative vs 126% baseline)
+  mdd_max: 0.25          # 25% max drawdown hard limit
+  sharpe_min: 0.80
+  sharpe_target: 1.20

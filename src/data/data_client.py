@@ -151,6 +151,26 @@ class DataClient:
                 logger.warning(f"fetch_open_interest_history failed: {e}")
         return pd.DataFrame(columns=["ts_ms", "open_interest"])
 
+    def fetch_liquidation_history(
+        self,
+        symbol: str,
+        start_ms: int,
+        end_ms: int,
+        cache_dir: str = "data",
+    ) -> "pd.DataFrame":
+        """Fetch real liquidation records via BybitMainnetClient (~30 days available).
+        Returns DataFrame[ts_ms, side, price, qty, usd_value].
+        side='Sell' = long liquidated, side='Buy' = short liquidated.
+        """
+        if self._bybit and isinstance(self._bybit, BybitMainnetClient):
+            try:
+                return self._bybit.fetch_liquidation_history(
+                    symbol, start_ms, end_ms, cache_dir=cache_dir
+                )
+            except Exception as e:
+                logger.warning(f"fetch_liquidation_history failed: {e}")
+        return pd.DataFrame(columns=["ts_ms", "side", "price", "qty", "usd_value"])
+
     def fetch_open_interest_recent(
         self,
         symbol: str,

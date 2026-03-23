@@ -45,10 +45,14 @@ tqdm>=4.66.0
 # ── Configuration & Environment ───────────────────────────────────────────
 python-dotenv>=1.0.0           # dotenv.load_dotenv
 PyYAML>=6.0                    # yaml.safe_load  (src/utils/config.py)
+google-generativeai>=0.5.0     # Gemini API client
 
 
 # ── Storage ───────────────────────────────────────────────────────────────
 SQLAlchemy>=2.0.0,<3.0.0       # src/storage/database.py
+chromadb>=0.4.0                # memory_layer.py — semantic vector index (Phase 2)
+PyGithub>=2.1.0                # memory_layer.py — async GitHub memory backup (Phase 4)
+requests>=2.31.0               # research_tools.py — arXiv / OpenAlex / Crossref APIs
 
 
 # ── Visualization (backtest charts) ──────────────────────────────────────

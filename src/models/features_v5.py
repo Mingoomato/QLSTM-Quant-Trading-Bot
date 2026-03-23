@@ -26,23 +26,23 @@ V5 Feature Pipeline: 48-dimensional  =  V4 (28) + Frenet-Serret (20)
 ────────────────────────────────────────────────────────────────────────────
 """
 
-from __future__ import annotations  # 파이썬 타입 힌트를 최신 방식으로 쓸 수 있게 해준다
+from __future__ import annotations  # 파이썬 타입 힌트를 최신 방식으로 쓸 수 있게 해준다  # Import annotations from __future__ module
 
-import os    # 파일과 폴더를 다룰 수 있게 해주는 라이브러리를 불러온다
-import numpy as np   # 숫자 계산을 빠르게 해주는 넘파이 라이브러리를 np라는 이름으로 불러온다
-import pandas as pd  # 표 형태의 데이터를 다루는 판다스 라이브러리를 pd라는 이름으로 불러온다
-from tqdm import tqdm  # 반복 작업의 진행 상황을 막대 그래프로 보여주는 라이브러리를 불러온다
+import os    # 파일과 폴더를 다룰 수 있게 해주는 라이브러리를 불러온다  # Import OS interface — file and directory operations
+import numpy as np   # 숫자 계산을 빠르게 해주는 넘파이 라이브러리를 np라는 이름으로 불러온다  # Import NumPy (numerical computation library) as "np"
+import pandas as pd  # 표 형태의 데이터를 다루는 판다스 라이브러리를 pd라는 이름으로 불러온다  # Import Pandas (DataFrame library) as "pd"
+from tqdm import tqdm  # 반복 작업의 진행 상황을 막대 그래프로 보여주는 라이브러리를 불러온다  # Import tqdm from Progress bar for loops
 
 from src.models.features_v4 import build_features_v4  # V4 피처 함수를 불러온다
 from src.models.frenet_features import build_frenet_features, FRENET_DIM  # Frenet 피처 함수와 차원 수를 불러온다
 
-FEAT_DIM_V4 = 28  # V4 피처의 차원 수를 28로 설정한다
+FEAT_DIM_V4 = 26  # V4 피처 차원 수: V2(16) + V4 extras(10)
 FEAT_DIM     = FEAT_DIM_V4 + FRENET_DIM   # V5 전체 피처 차원 수 = V4(28) + Frenet(FRENET_DIM), 총 54
 
 
 # ── Per-bar builder ───────────────────────────────────────────────────────────
 
-def build_features_v5(df: pd.DataFrame) -> np.ndarray:
+def build_features_v5(df: pd.DataFrame) -> np.ndarray:  # [build_features_v5] Function definition
     """
     Build 54-dim V5 feature vector for the LAST bar in df.
 
@@ -52,12 +52,12 @@ def build_features_v5(df: pd.DataFrame) -> np.ndarray:
     """
     v4     = build_features_v4(df)       # V4 피처 함수를 호출해 기본 피처 배열 [28]을 만든다
     frenet = build_frenet_features(df)   # Frenet-Serret 기하 피처를 계산해 배열 [26]을 만든다
-    return np.concatenate([v4, frenet]).astype(np.float32)  # 두 배열을 이어 붙여 float32로 반환한다
+    return np.concatenate([v4, frenet]).astype(np.float32)  # 두 배열을 이어 붙여 float32로 반환한다  # Returns a value to the caller
 
 
 # ── Disk-cached matrix builder ────────────────────────────────────────────────
 
-def generate_and_cache_features_v5(
+def generate_and_cache_features_v5(  # [generate_and_cache_features_v5] Function definition
     df_clean: pd.DataFrame,   # 전체 OHLCV 데이터프레임 (N개 봉), 선택적으로 funding_rate 등 포함 가능
     cache_path: str,           # 캐시 파일 저장 경로 (권장 접미사: '_v5.npy')
     warmup: int  = 120,        # 이 봉 수 이전까지는 피처를 0으로 채운다
@@ -78,48 +78,49 @@ def generate_and_cache_features_v5(
 
     Cache is invalidated if shape mismatches (N or FEAT_DIM changed).
     """
-    if os.path.exists(cache_path):  # 캐시 파일이 이미 존재하면
+    if os.path.exists(cache_path):  # 캐시 파일이 이미 존재하면  # Branch: executes only when condition is True
         cached = np.load(cache_path)  # 저장된 캐시 파일을 불러온다
-        if cached.shape == (len(df_clean), FEAT_DIM):  # 캐시의 형태가 현재 데이터와 맞으면
-            if verbose:  # 출력 옵션이 켜져 있으면
-                print(f"[features_v5] Loaded cache: {cache_path}  shape={cached.shape}")  # 캐시 불러왔다고 알린다
-            return cached  # 캐시 데이터를 바로 반환한다
-        if verbose:  # 형태가 달라서 캐시를 다시 만들어야 할 때
-            print(
+        if cached.shape == (len(df_clean), FEAT_DIM):  # 캐시의 형태가 현재 데이터와 맞으면  # Branch: executes only when condition is True
+            if verbose:  # 출력 옵션이 켜져 있으면  # Branch: executes only when condition is True
+                print(f"[features_v5] Loaded cache: {cache_path}  shape={cached.shape}")  # 캐시 불러왔다고 알린다  # Shape (dimensions) of the tensor/array
+            return cached  # 캐시 데이터를 바로 반환한다  # Returns a value to the caller
+        if verbose:  # 형태가 달라서 캐시를 다시 만들어야 할 때  # Branch: executes only when condition is True
+            print(  # Prints output to stdout
                 f"[features_v5] Cache shape mismatch "
-                f"({cached.shape} vs ({len(df_clean)}, {FEAT_DIM})), rebuilding..."  # 형태 불일치 경고
+                f"({cached.shape} vs ({len(df_clean)}, {FEAT_DIM})), rebuilding..."  # 형태 불일치 경고  # Shape (dimensions) of the tensor/array
             )
 
-    has_funding = "funding_rate"      in df_clean.columns  # 펀딩 비율 열이 있는지 확인한다
-    has_oi      = "open_interest"     in df_clean.columns  # 미결제약정 열이 있는지 확인한다
+    has_funding = "funding_rate"      in df_clean.columns  # 펀딩 비율 열이 있는지 확인한다  # Funding rate: periodic payment between longs and shorts
+    has_oi      = "open_interest"     in df_clean.columns  # 미결제약정 열이 있는지 확인한다  # Open interest: total number of outstanding contracts
     has_taker   = "taker_buy_volume"  in df_clean.columns  # 매수 테이커 거래량 열이 있는지 확인한다
-    if verbose:  # 출력 옵션이 켜져 있으면
-        print(
-            f"[features_v5] Building {len(df_clean)} V5 feature vectors "
+    if verbose:  # 출력 옵션이 켜져 있으면  # Branch: executes only when condition is True
+        print(  # Prints output to stdout
+            f"[features_v5] Building {len(df_clean)} V5 feature vectors "  # Returns the number of items
             f"({FEAT_DIM}-dim = V4-28 + Frenet-20, dependency-free) "  # 피처 구성 정보를 출력한다
             f"| funding={'YES' if has_funding else 'NO'} "  # 펀딩 비율 데이터 존재 여부 출력
             f"| OI={'YES' if has_oi else 'NO'} "  # OI 데이터 존재 여부 출력
             f"| CVD={'Binance' if has_taker else 'OHLCV'} ..."  # CVD 계산 방식 출력
         )
 
-    n            = len(df_clean)  # 전체 데이터 개수를 n에 저장한다
+    n            = len(df_clean)  # 전체 데이터 개수를 n에 저장한다  # Returns the number of items
     feature_list = []  # 계산된 피처들을 저장할 빈 리스트를 만든다
 
     # verbose가 True이면 진행 막대를 보여주고, False이면 그냥 범위를 반복한다
+    # Generates a sequence of integers
     it = tqdm(range(n), desc="Building V5 Features", ascii=True) if verbose else range(n)
-    for i in it:  # 0번 봉부터 마지막 봉까지 하나씩 반복한다
-        if i < warmup:  # 워밍업 구간이면 (아직 충분한 데이터가 없을 때)
+    for i in it:  # 0번 봉부터 마지막 봉까지 하나씩 반복한다  # Loop: iterate over each item in the sequence
+        if i < warmup:  # 워밍업 구간이면 (아직 충분한 데이터가 없을 때)  # Branch: executes only when condition is True
             feature_list.append(np.zeros(FEAT_DIM, dtype=np.float32))  # FEAT_DIM개의 0으로 채워진 피처를 추가한다
-            continue  # 다음 봉으로 넘어간다
+            continue  # 다음 봉으로 넘어간다  # Skip the rest of this iteration
         window = df_clean.iloc[max(0, i - lookback + 1): i + 1]  # i봉 기준으로 lookback 길이의 창을 만든다
-        feature_list.append(build_features_v5(window))  # 그 창에서 V5 피처를 계산해 리스트에 추가한다
+        feature_list.append(build_features_v5(window))  # 그 창에서 V5 피처를 계산해 리스트에 추가한다  # Appends an item to the end of the list
 
-    all_features = np.array(feature_list, dtype=np.float32)  # 리스트를 넘파이 배열로 변환한다
-    os.makedirs(os.path.dirname(os.path.abspath(cache_path)), exist_ok=True)  # 저장 폴더가 없으면 만든다
+    all_features = np.array(feature_list, dtype=np.float32)  # 리스트를 넘파이 배열로 변환한다  # Converts Python sequence to NumPy array
+    os.makedirs(os.path.dirname(os.path.abspath(cache_path)), exist_ok=True)  # 저장 폴더가 없으면 만든다  # Creates directory (and parents) if they do not exist
     np.save(cache_path, all_features)  # 계산된 피처 배열을 파일로 저장한다
-    if verbose:  # 출력 옵션이 켜져 있으면
-        print(f"[features_v5] Saved: {cache_path}  shape={all_features.shape}")  # 저장 완료를 알린다
-    return all_features  # 최종 피처 배열을 반환한다
+    if verbose:  # 출력 옵션이 켜져 있으면  # Branch: executes only when condition is True
+        print(f"[features_v5] Saved: {cache_path}  shape={all_features.shape}")  # 저장 완료를 알린다  # Shape (dimensions) of the tensor/array
+    return all_features  # 최종 피처 배열을 반환한다  # Returns a value to the caller
 
 
 # ── Feature name list (54-dim) ────────────────────────────────────────────────
@@ -144,41 +145,41 @@ V5_FEATURE_NAMES = (
     + FRENET_FEATURE_NAMES  # frenet_features.py에서 가져온 피처 이름들을 이어 붙인다
 )
 
-assert len(V5_FEATURE_NAMES) == FEAT_DIM  # 피처 이름 개수가 전체 차원 수와 같은지 확인한다
+assert len(V5_FEATURE_NAMES) == FEAT_DIM  # 피처 이름 개수가 전체 차원 수와 같은지 확인한다  # Assertion: raises AssertionError if condition is False
 
 
 # ── Self-test ─────────────────────────────────────────────────────────────────
 
-if __name__ == "__main__":  # 이 파일을 직접 실행했을 때만 아래 코드를 실행한다
+if __name__ == "__main__":  # 이 파일을 직접 실행했을 때만 아래 코드를 실행한다  # Branch: executes only when condition is True
     rng   = np.random.default_rng(42)  # 재현 가능한 난수 생성기를 만든다 (시드=42)
     n     = 60  # 테스트용 봉 개수를 60으로 설정한다
-    close = 50000.0 + np.cumsum(rng.normal(0, 200, n))  # 비트코인 가격처럼 생긴 가짜 종가를 만든다
-    close = np.maximum(close, 100.0)  # 종가가 100 미만으로 떨어지지 않도록 제한한다
+    close = 50000.0 + np.cumsum(rng.normal(0, 200, n))  # 비트코인 가격처럼 생긴 가짜 종가를 만든다  # Computes cumulative sum along an axis
+    close = np.maximum(close, 100.0)  # 종가가 100 미만으로 떨어지지 않도록 제한한다  # Finds the maximum value
 
     df = pd.DataFrame({
         "open":   close * (1 + rng.normal(0, 0.001, n)),  # 종가에 아주 작은 변동을 더해 시가를 만든다
         "high":   close + rng.uniform(0, 400, n),          # 고가 = 종가 + 랜덤 상승폭
-        "low":    np.maximum(close - rng.uniform(0, 400, n), 1.0),  # 저가 = 종가 - 랜덤 하락폭 (최소 1)
+        "low":    np.maximum(close - rng.uniform(0, 400, n), 1.0),  # 저가 = 종가 - 랜덤 하락폭 (최소 1)  # Finds the maximum value
         "close":  close,   # 종가
         "volume": rng.uniform(1e6, 1e7, n),  # 100만~1000만 사이의 랜덤 거래량
     })  # 위 데이터들로 데이터프레임을 만든다
 
     feat = build_features_v5(df)  # V5 피처를 계산한다
-    print(f"shape  : {feat.shape}  (expected: ({FEAT_DIM},))")  # 피처 형태를 출력한다
-    print(f"range  : [{feat.min():.4f}, {feat.max():.4f}]")     # 피처 값의 최소-최대 범위를 출력한다
-    print(f"NaN    : {np.isnan(feat).any()}  (expected: False)") # NaN 값이 있는지 확인해 출력한다
-    print()  # 빈 줄을 출력한다
+    print(f"shape  : {feat.shape}  (expected: ({FEAT_DIM},))")  # 피처 형태를 출력한다  # Shape (dimensions) of the tensor/array
+    print(f"range  : [{feat.min():.4f}, {feat.max():.4f}]")     # 피처 값의 최소-최대 범위를 출력한다  # Prints output to stdout
+    print(f"NaN    : {np.isnan(feat).any()}  (expected: False)") # NaN 값이 있는지 확인해 출력한다  # Tests element-wise for NaN
+    print()  # 빈 줄을 출력한다  # Prints output to stdout
     print("── V4 base (0-27) ──")  # V4 기본 피처 구분선을 출력한다
     for i in range(FEAT_DIM_V4):  # V4 피처(0~27번) 각각에 대해 반복한다
-        print(f"  [{i:2d}] {V5_FEATURE_NAMES[i]:<26s} = {feat[i]:+.4f}")  # 피처 이름과 값을 출력한다
-    print()  # 빈 줄을 출력한다
+        print(f"  [{i:2d}] {V5_FEATURE_NAMES[i]:<26s} = {feat[i]:+.4f}")  # 피처 이름과 값을 출력한다  # Prints output to stdout
+    print()  # 빈 줄을 출력한다  # Prints output to stdout
     print(f"── Frenet (28-{FEAT_DIM-1}) ──")  # Frenet 피처 구분선을 출력한다
     for i in range(FEAT_DIM_V4, FEAT_DIM):  # Frenet 피처(28번~끝) 각각에 대해 반복한다
-        print(f"  [{i:2d}] {V5_FEATURE_NAMES[i]:<30s} = {feat[i]:+.4f}")  # 피처 이름과 값을 출력한다
+        print(f"  [{i:2d}] {V5_FEATURE_NAMES[i]:<30s} = {feat[i]:+.4f}")  # 피처 이름과 값을 출력한다  # Prints output to stdout
 
-    assert feat.shape == (FEAT_DIM,)  # 피처 크기가 FEAT_DIM인지 확인한다
+    assert feat.shape == (FEAT_DIM,)  # 피처 크기가 FEAT_DIM인지 확인한다  # Assertion: raises AssertionError if condition is False
     assert not np.isnan(feat).any()   # NaN(숫자가 아닌 값)이 없는지 확인한다
-    assert not np.isinf(feat).any()   # 무한대 값이 없는지 확인한다
-    assert np.all(np.abs(feat) <= np.pi + 1e-5)  # 모든 값이 -π~π 범위 안에 있는지 확인한다
-    print(f"\n[PASS] features_v5.py self-test OK")  # 모든 테스트 통과 메시지를 출력한다
-    print(f"  V4={FEAT_DIM_V4}  Frenet={FRENET_DIM}  Total={FEAT_DIM}")  # 각 구성요소의 차원 수를 출력한다
+    assert not np.isinf(feat).any()   # 무한대 값이 없는지 확인한다  # Assertion: raises AssertionError if condition is False
+    assert np.all(np.abs(feat) <= np.pi + 1e-5)  # 모든 값이 -π~π 범위 안에 있는지 확인한다  # Assertion: raises AssertionError if condition is False
+    print(f"\n[PASS] features_v5.py self-test OK")  # 모든 테스트 통과 메시지를 출력한다  # Prints output to stdout
+    print(f"  V4={FEAT_DIM_V4}  Frenet={FRENET_DIM}  Total={FEAT_DIM}")  # 각 구성요소의 차원 수를 출력한다  # Prints output to stdout

@@ -628,6 +628,89 @@ class BybitMainnetClient:
         logger.info(f"[OI] Fetched {len(df)} records for {symbol}")
         return df
 
+    def fetch_liquidation_history(
+        self,
+        symbol: str,
+        start_ms: int,
+        end_ms: int,
+        cache_dir: str = "data",
+    ) -> pd.DataFrame:
+        """Fetch historical liquidation records from Bybit V5.
+
+        Endpoint: GET /v5/market/liquidation
+        side: "Sell" = long liquidated, "Buy" = short liquidated
+        Returns DataFrame[ts_ms, side, price, qty, usd_value] sorted ascending.
+        Note: Bybit typically retains ~30 days of liquidation history.
+        """
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_path = os.path.join(
+            cache_dir, f"liquidation_{symbol}_{start_ms}_{end_ms}.csv"
+        )
+        if os.path.exists(cache_path):
+            try:
+                df_c = pd.read_csv(cache_path)
+                if not df_c.empty and "ts_ms" in df_c.columns:
+                    logger.info(f"[liq] Loaded cache: {len(df_c)} records")
+                    return df_c
+            except Exception:
+                pass
+
+        all_records: list = []
+        cursor = ""
+
+        for _ in range(2000):
+            params = {
+                "category": "linear",
+                "symbol":   symbol,
+                "limit":    200,
+                "startTime": int(start_ms),
+                "endTime":   int(end_ms),
+            }
+            if cursor:
+                params["cursor"] = cursor
+            url = f"{REST_BASE}/v5/market/liquidation?{urlencode(params)}"
+            try:
+                req = Request(url, headers={"User-Agent": "TerminalQuantSuite/1.0"})
+                with urlopen(req, timeout=10) as resp:
+                    payload = json.loads(resp.read().decode("utf-8"))
+                if payload.get("retCode", 0) != 0:
+                    logger.warning(f"[liq] API error: {payload.get('retMsg')}")
+                    break
+                result = payload.get("result", {})
+                rows   = result.get("list", [])
+                if not rows:
+                    break
+                for r in rows:
+                    ts_ms = int(r.get("updatedTime", 0))
+                    side  = r.get("side", "")
+                    price = float(r.get("price", 0.0))
+                    qty   = float(r.get("qty", 0.0))
+                    all_records.append({
+                        "ts_ms":     ts_ms,
+                        "side":      side,
+                        "price":     price,
+                        "qty":       qty,
+                        "usd_value": price * qty,
+                    })
+                cursor = result.get("nextPageCursor", "")
+                if not cursor:
+                    break
+                time.sleep(0.08)
+            except Exception as e:
+                logger.warning(f"[liq] fetch error: {e}")
+                break
+
+        if not all_records:
+            return pd.DataFrame(columns=["ts_ms", "side", "price", "qty", "usd_value"])
+
+        df = pd.DataFrame(all_records)
+        df.drop_duplicates(inplace=True)
+        df.sort_values("ts_ms", inplace=True)
+        df = df[(df["ts_ms"] >= start_ms) & (df["ts_ms"] <= end_ms)].reset_index(drop=True)
+        df.to_csv(cache_path, index=False)
+        logger.info(f"[liq] Fetched {len(df)} records for {symbol}")
+        return df
+
     # ── Signed private endpoints ──────────────────────────────────────────
 
     def _sign_request(self, params: dict) -> dict:

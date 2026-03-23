@@ -148,9 +148,10 @@ class DiagonalQNGOptimizer:
                     self._qfi_initialized = True
                 else:
                     # Exponential moving average — smooth out sample noise
+                    # Ensure both tensors on same device (CPU)
                     self._qfi_diag = (
-                        self.qfi_ema * self._qfi_diag
-                        + (1.0 - self.qfi_ema) * new_qfi
+                        self.qfi_ema * self._qfi_diag.cpu()
+                        + (1.0 - self.qfi_ema) * new_qfi.cpu()
                     )
 
         # ── 2. QNG update for VQC params ──────────────────────────────────
