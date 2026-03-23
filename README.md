@@ -507,8 +507,4 @@ pytest -q  # includes test_agent_short_signal.py (input-invariance regression)
 
 ---
 
-> **Note:** `Testnet_API.md` and `.env` are excluded from this repository. All API keys are loaded from environment variables only. Paper trading is the default mode — live trading requires explicit `--mode live` flag.
-
----
-
 [한국어 README](README_KR.md)
