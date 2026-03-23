@@ -316,6 +316,28 @@ Independent evaluation of model sophistication across two dimensions:
 
 ---
 
+
+### 5.4 Current OOS Validation — Q1 2026 (13-dim Structural Model)
+
+> **Honest status update** — The results below reflect the latest out-of-sample backtest as of 2026-03-23.
+
+Model: `checkpoints/structural_13dim/test_agent.pt` | Period: 2026-01-01 → 2026-03-23 | Timeframe: 1h
+
+| Metric | Value | Gate |
+|---|---|---|
+| Win Rate | 22.3% (35/157 trades) | ❌ Gate 1 FAIL (BEP = 25.4%) |
+| Mean R-multiple | −0.2003 | ❌ Gate 2 FAIL (p = 1.0) |
+| ROI | −51.6% | — |
+| Sharpe | −2.517 | — |
+| Max Drawdown | 58.22% | — |
+| Avg Win R | +2.903 | — |
+| Long bias | **100% long** (0 short trades) | 🔴 Critical bug |
+
+**Root cause identified**: The agent generates exclusively long positions across all 157 trades — a directional bias inconsistent with a model trained on symmetric Long/Short/Hold outputs. Active debugging sprint underway targeting `QuantumFinancialAgent.get_action()` and the training pipeline normalization stack.
+
+Full OOS report: [`reports/qlstm13_oos_report_q1_2026.json`](reports/qlstm13_oos_report_q1_2026.json)
+R-multiple distribution: [`reports/qlstm13_rmultiples_q1_2026.csv`](reports/qlstm13_rmultiples_q1_2026.csv)
+
 ## 6. Limitations & Future Work
 
 ### 6.1 Epistemological Bound on Market Prediction
@@ -387,6 +409,27 @@ f(B^H_t) = f(B^H_0) + ∫₀ᵗ f'(B^H_s) dB^H_s  +  H ∫₀ᵗ f''(B^H_s) s^{2
 ```
 
 **Rough path theory** (Lyons, 1998) provides the rigorous framework for integration against non-semimartingale paths via the lifted rough path (X, X) encoding iterated integrals.
+
+
+### 6.3 On-Chain Fundamental Data Integration (Active Design)
+
+The Q1 2026 OOS failure motivated a strategic pivot: price-derived features are observable by all market participants simultaneously and thus carry diminishing alpha. Blockchain on-chain data — while public — requires significant analytical overhead to interpret, preserving an information asymmetry.
+
+**Planned 19-dimensional on-chain feature set:**
+
+| Category | Features | Lead Time |
+|---|---|---|
+| Valuation | MVRV Z-Score, SOPR, NUPL, Realized Price deviation | 1–4 weeks |
+| Network Activity | Active Addresses Z-Score, NVT Signal, New Address Growth | 1–7 days |
+| Supply Dynamics | LTH Supply Ratio, STH SOPR, Exchange Netflow Z-Score | 1–5 days |
+| Mining | Hash Ribbon buy signal, Miner Outflow Z-Score, Difficulty Ribbon | 2–6 weeks |
+| Derivatives Context | OI/LTH ratio, Perp Basis Z-Score, Funding×OI product | Immediate–1 day |
+
+**Data sources (free tier):** BGeometrics (MVRV, SOPR, NUPL), Blockchain.com (Active Addresses, Hash Rate), Bybit extended endpoints (OI history, Funding history)
+
+**Validation methodology:** Granger causality test (lag 1–24h, p < 0.05) gates feature inclusion before any model integration — enforcing that features demonstrate predictive precedence over BTC 1h returns before entering the pipeline.
+
+Full design specification: [`docs/onchain_feature_design.md`](docs/onchain_feature_design.md)
 
 ### 6.3 Future Work — Toward a Rigorous Financial Mathematics Foundation
 
