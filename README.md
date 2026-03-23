@@ -1,5 +1,7 @@
 # QLSTM-Quant-Trading-Bot
 
+> [한국어 README](README_KR.md)
+
 # Quantum-Classical Hybrid Reinforcement Learning for Cryptocurrency Algorithmic Trading
 
 > A portfolio project demonstrating the application of quantum variational circuits, advanced stochastic physics, and structural market-microstructure mechanisms to autonomous derivatives trading on Bybit Perpetual Futures.
