@@ -422,6 +422,8 @@ The realistic goal is a consistent positive KL divergence from random baseline: 
 
 ### Setup
 
+* All of the dependecies can be struggling to set up, I used al most 6 years-old Laptop for computing environment, so requirement.txt's contents can crash to the other upper version of CUDA services, Torch, and other libraries (I used CUDA 12.6, GeForce MX-450 Laptop GPU for the training) *
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
