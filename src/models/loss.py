@@ -1605,7 +1605,7 @@ class AdvantageWeightedBC(nn.Module):  # ★ [AdvantageWeightedBC] 클래스 정
         active = (labels > 0).float()                      # [B]  1=LONG/SHORT, 0=HOLD
 
         if advantages is not None:  # 조건이 참일 때만 실행한다  # Branch: executes only when condition is True
-            adv_pos = F.relu(advantages.detach())          # [B]  max(0, Â)
+            adv_pos = advantages.detach().abs()            # [B]  |Â| — symmetric weighting breaks self-reinforcing loop
         else:  # 앞의 모든 조건이 거짓일 때 실행한다  # Branch: all previous conditions were False
             adv_pos = torch.ones_like(active)  # 1로 채워진 텐서를 만든다  # Creates a ones-filled tensor
 

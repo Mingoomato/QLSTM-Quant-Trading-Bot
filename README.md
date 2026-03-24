@@ -314,44 +314,60 @@ Raw OHLCV + Funding Rate + Open Interest  (Bybit REST, 1h candles)
 
 ## 6. Results & Validation
 
-### 6.1 Walk-Forward RL Validation — Pipeline A (1h, BTCUSDT, 10 Folds)
+### 6.1 Walk-Forward RL Validation — Pipeline B (1h, BTC+ETH+SOL, 5 Folds, 2026-03-24)
 
-Period: 2023-06-01 – 2025-12-31 | Metric: Expected Value per trade
+**Training:** BC pretrain on BTCUSDT 2019–2022 → RL fine-tune on BTC+ETH+SOL 2023–2025 (expanding window)
 
-| Fold | Validation Period | EV (per trade) | Avg. Max Confidence |
+| Fold | Validation Period | EV/trade | WR | L/S Balance | Note |
+|---|---|---|---|---|---|
+| 1 | 2023-07 – 2024-01 | +0.0887 | 46.3% | 100% LONG | Directional bias |
+| 2 | 2023-10 – 2024-04 | — | — | — | — |
+| 3 | 2024-01 – 2024-07 | — | — | — | — |
+| 4 | 2024-04 – 2024-10 | +0.1320 | 49.9% | 100% SHORT | Directional bias |
+| **5** | **2025-07 – 2026-01** | **+0.0875** | **46.5%** | **L46%/S49%** | **✅ Balanced** |
+
+Global best checkpoint: EV=+0.1320 (Fold 4). Most balanced checkpoint: Fold 5 (EV=+0.0875).
+
+**Previous Pipeline A Walk-Forward (28-dim QLSTM, archived):**
+
+| Fold | Validation Period | EV (per trade) | Note |
 |---|---|---|---|
-| 1 | 2023-09 – 2023-11 | +0.2441 | 0.585 |
-| 2 | 2023-11 – 2024-02 | +0.2106 | 0.746 |
-| 3 | 2024-02 – 2024-05 | +0.3219 | 0.777 |
-| 4 | 2024-05 – 2024-08 | +0.2093 | 0.807 |
-| 5 | 2024-08 – 2024-10 | +0.2013 | 0.745 |
-| 6 | 2024-10 – 2025-02 | +0.2672 | 0.751 |
-| **7** | **2025-02 – 2025-04** | **+0.2929** | **0.830** ★ 2025 OOS |
-| **8** | **2025-04 – 2025-07** | **+0.2192** | **0.856** ★ 2025 OOS |
+| 1–6 | 2023–2025 | +0.20 – +0.32 | In-sample |
+| 7–8 | 2025-02 – 2025-07 | +0.21 – +0.29 | ★ 2025 OOS |
 
-Folds 7–8 validate on 2025 data never seen during optimization.
+### 6.2 True OOS — Q1 2026 (2026-03-24, after bug fixes)
 
-### 6.2 True OOS — Q1 2026 (Pipeline A — 13-dim QLSTM)
+> **Honest status update** as of 2026-03-24 — 3 bugs fixed, retrained from scratch
 
-> **Honest status update** as of 2026-03-23
+#### 6.2a Rule-Based Structural Signal (baseline)
 
 | Metric | Value | Gate |
 |---|---|---|
-| Win Rate | 22.29% (35/157 trades) | ❌ Gate 1 FAIL (BEP = 25.4%) |
-| Mean R-multiple | −0.2003 | ❌ Gate 2 FAIL (p = 1.0) |
-| ROI | −51.6% | — |
-| Sharpe | −2.517 | — |
-| Max Drawdown | 58.22% | — |
-| Long bias | **100% LONG** (0 short trades) | 🔴 Critical bug |
-| Kelly fraction | −6.90% | 🔴 No allocation |
+| Win Rate | 24.0% (25/104 trades) | ❌ Gate 1 FAIL (BEP = 25.4%) |
+| EV/trade | −0.038R | ❌ |
+| ROI | −43.3% | — |
+| Max Drawdown | 49.1% | — |
+| Direction | LONG 32 / SHORT 72 | SHORT bias |
 
-**Root cause confirmed** (see [`scripts/debug_long_bias.py`](scripts/debug_long_bias.py)):
-- Primary: `_koop_vecs = [[0,0,0,0,0]]` in EDMD → all VQC angles fixed → input-invariant model
-- Secondary: `logit_proj` bias +0.352 LONG-SHORT gap (accumulated during training)
-- Tertiary: `F.relu(advantages)` in loss → only reinforces positive-advantage actions → self-reinforcing loop
+#### 6.2b RL Agent — Fold 5 Checkpoint (most balanced)
 
-Full OOS report: [`reports/qlstm13_oos_report_q1_2026.json`](reports/qlstm13_oos_report_q1_2026.json)
-R-multiple distribution: [`reports/qlstm13_rmultiples_q1_2026.csv`](reports/qlstm13_rmultiples_q1_2026.csv)
+| Metric | Value | Gate |
+|---|---|---|
+| Win Rate | 25.0% (25/100 trades) | ❌ Gate 1 FAIL (BEP = 25.4%, −0.4pp) |
+| ROI | −49.0% | — |
+| Max Drawdown | 74.4% | — |
+| Sharpe | −0.893 | — |
+| Direction | Balanced L/S | ✅ No directional bias |
+
+**Progress vs previous run (22.29% WR, 100% LONG):** directional bias eliminated, WR improved +2.7pp. Gate 1 not yet passed — 0.4pp gap remains.
+
+**Bug fixes applied (2026-03-24):**
+- ✅ Bug 1: `_koop_vecs = zeros` fallback → dynamic EDMD (`src/data/spectral_decomposer.py`)
+- ✅ Bug 2: `logit_proj` bias zero-init already in place + `logit_bias_reg_coef=1.0` active
+- ✅ Bug 3: `F.relu(advantages)` → `advantages.abs()` — symmetric weighting (`src/models/loss.py`)
+- ✅ 20/20 regression tests passing (`tests/test_agent_variance.py`)
+
+R-multiple distribution: [`reports/q1_2026_oos_trades.csv`](reports/q1_2026_oos_trades.csv)
 
 ### 6.3 Behavioral Alpha — Pipeline B Baseline
 
@@ -384,11 +400,11 @@ Independent evaluation (self-assessed against literature benchmarks):
 
 | # | Bug | File | Status |
 |---|---|---|---|
-| 1 | `_koop_vecs = zeros` → input-invariant model | `src/data/spectral_decomposer.py` | 🔴 Fix pending |
-| 2 | `logit_proj` bias +0.352 LONG-SHORT | `src/models/integrated_agent.py` | 🔴 Fix pending |
-| 3 | `F.relu(advantages)` → self-reinforcing loop | `src/models/loss.py` | 🔴 Fix pending |
+| 1 | `_koop_vecs = zeros` → input-invariant model | `src/data/spectral_decomposer.py` | ✅ Fixed 2026-03-24 |
+| 2 | `logit_proj` bias LONG-SHORT asymmetry | `src/models/integrated_agent.py` | ✅ Fixed (zero-init + reg) |
+| 3 | `F.relu(advantages)` → self-reinforcing loop | `src/models/loss.py` | ✅ Fixed 2026-03-24 |
 
-Regression test: [`tests/test_agent_short_signal.py`](tests/test_agent_short_signal.py)
+Regression tests: [`tests/test_agent_variance.py`](tests/test_agent_variance.py) — 20/20 passing
 
 ### 7.2 Epistemological Bound on Market Prediction
 

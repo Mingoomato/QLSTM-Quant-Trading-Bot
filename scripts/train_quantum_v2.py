@@ -942,7 +942,7 @@ def main():  # [main] 함수 정의 시작
         except ValueError: return x
     parser.add_argument(  # 커맨드라인에서 이 인자를 받을 수 있게 등록한다  # Registers a CLI argument for argparse
         "--feat-ver", type=_fv_type, default=4, choices=[4, 5, "structural"],
-        help="Feature version: 4=V4 28-dim (default), 5=V5 48-dim, structural=13-dim"
+        help="Feature version: 4=V4 26-dim (default), 5=V5 48-dim, structural=13-dim"
     )
     parser.add_argument(  # 커맨드라인에서 이 인자를 받을 수 있게 등록한다  # Registers a CLI argument for argparse
         "--seed", type=int, default=None,

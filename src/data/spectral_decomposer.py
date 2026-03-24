@@ -586,6 +586,18 @@ class SpectralDecomposer(nn.Module):  # ── Class [SpectralDecomposer]: group
         B, T, F = x_norm.shape
         K = self.n_eigenvectors
 
+        # Bug fix: _koop_vecs initialized as zeros placeholder [1, K].
+        # If load_koopman_precomputed() was never called or saved zeros,
+        # c_kt = Psi_s @ zeros → all-zero → VQC angles constant → input-invariant.
+        # Detect and fall back to dynamic EDMD instead.
+        if self._koop_vecs.abs().max() < 1e-8:
+            eigs, vecs = self._edmd_decompose(x_norm)
+            c_kt = self._project(x_norm, vecs)
+            dummy_eigs = torch.ones(B, K, device=x_norm.device, dtype=x_norm.dtype)
+            dummy_vecs = torch.zeros(B, F, K, device=x_norm.device, dtype=x_norm.dtype)
+            self._last_koopman_c_kt = c_kt.detach()
+            return dummy_eigs, dummy_vecs, c_kt
+
         # ── Nonlinear dictionary (stable, bounded) ────────────────────────
         x_clip = x_norm.clamp(-5.0, 5.0)                   # [B, T, F]
         x2     = x_clip.pow(2).clamp(0.0, 25.0)
